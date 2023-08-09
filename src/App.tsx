@@ -1,48 +1,60 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import "./App.css";
 
-// TimeSlot 컴포넌트
 interface TimeSlotProps {
   hour: number;
   onReserve: (hour: number) => void;
+  isReserved: boolean;
 }
 
-const TimeSlot: React.FC<TimeSlotProps> = ({ hour, onReserve }) => {
-  return (
-    <div className="time-slot">
-      <span>
-        {hour}:00 - {hour + 1}:00
-      </span>
-      <button onClick={() => onReserve(hour)}>예약</button>
-    </div>
-  );
-};
+const TimeSlot: React.FC<TimeSlotProps> = ({ hour, onReserve, isReserved }) => (
+  <div className="time-slot">
+    <span>
+      {hour}:00 - {hour + 1}:00
+    </span>
+    <button disabled={isReserved} onClick={() => onReserve(hour)}>
+      {isReserved ? "예약됨" : "예약"}
+    </button>
+  </div>
+);
 
-// TimeSlotList 컴포넌트
 interface TimeSlotListProps {
   date: Date;
   onReserve: (hour: number) => void;
+  reservations: number[];
 }
 
-const TimeSlotList: React.FC<TimeSlotListProps> = ({ date, onReserve }) => {
+const TimeSlotList: React.FC<TimeSlotListProps> = ({
+  date,
+  onReserve,
+  reservations,
+}) => {
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
   return (
     <div className="time-slot-list">
       {hours.map((hour) => (
-        <TimeSlot key={hour} hour={hour} onReserve={onReserve} />
+        <TimeSlot
+          key={hour}
+          hour={hour}
+          onReserve={onReserve}
+          isReserved={reservations.includes(hour)}
+        />
       ))}
     </div>
   );
 };
 
-// App 컴포넌트
 function App() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date().getMonth());
-  const date = new Date();
+  const [reservations, setReservations] = useState<Record<string, number[]>>(
+    {}
+  );
 
   const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const date = new Date();
   const startDay = new Date(date.getFullYear(), currentMonth, 1).getDay();
   const daysInMonth = new Date(
     date.getFullYear(),
@@ -67,13 +79,69 @@ function App() {
             : ""
         }`}
         onClick={() =>
-          setSelectedDate(new Date(date.getFullYear(), currentMonth, i))
+          selectedDate && selectedDate.getDate() === i
+            ? setSelectedDate(null)
+            : setSelectedDate(new Date(date.getFullYear(), currentMonth, i))
         }
       >
         {i}
       </div>
     );
   }
+
+  useEffect(() => {
+    const fetchReservations = async () => {
+      try {
+        const response = await axios.get("/api/reservations");
+        setReservations(
+          response.data.reduce(
+            (
+              acc: Record<string, number[]>,
+              r: { date: string; hour: number }
+            ) => {
+              if (!acc[r.date]) {
+                acc[r.date] = [];
+              }
+              acc[r.date].push(r.hour);
+              return acc;
+            },
+            {}
+          )
+        );
+      } catch (error) {
+        console.error("Failed to fetch reservations:", error);
+      }
+    };
+
+    fetchReservations();
+  }, []);
+
+  const handleReserve = async (hour: number) => {
+    if (!selectedDate) return;
+
+    const dateString = selectedDate.toISOString().split("T")[0];
+
+    try {
+      await axios.post("http://localhost:4000/api/reserve", {
+        date: dateString,
+        hour,
+      });
+      setReservations((prev) => {
+        const updated = { ...prev };
+        if (!updated[dateString]) {
+          updated[dateString] = [];
+        }
+        updated[dateString].push(hour);
+        return updated;
+      });
+    } catch (error) {
+      console.error("Failed to make a reservation:", error);
+    }
+  };
+
+  const currentReservations = selectedDate
+    ? reservations[selectedDate.toISOString().split("T")[0]] || []
+    : [];
 
   return (
     <div className="App">
@@ -101,13 +169,8 @@ function App() {
         {selectedDate && (
           <TimeSlotList
             date={selectedDate}
-            onReserve={(hour) => {
-              console.log(
-                `Reserved at ${selectedDate.toDateString()} - ${hour}:00 to ${
-                  hour + 1
-                }:00`
-              );
-            }}
+            onReserve={handleReserve}
+            reservations={currentReservations}
           />
         )}
       </div>
