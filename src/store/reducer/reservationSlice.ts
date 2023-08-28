@@ -1,6 +1,7 @@
 import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { Reservation } from "../../types/reservation";
+import { reservationApi } from "../services/reservation";
 
 const initialState = {
   reservationList: [] as Reservation[],
@@ -14,6 +15,15 @@ export const reservationSlice = createSlice({
     incrementByAmount: (state, action: PayloadAction<number>) => {
       state.value += action.payload;
     },
+  },
+  extraReducers: (builder) => {
+    //GetStoreIDValidateStatus
+    builder.addMatcher(
+      reservationApi.endpoints.getReservationList.matchFulfilled,
+      (state, action) => {
+        state.reservationList = action.payload;
+      }
+    );
   },
 });
 
