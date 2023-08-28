@@ -136,6 +136,8 @@ function App() {
       });
     } catch (error) {
       console.error("Failed to make a reservation:", error);
+    } finally {
+      console.log(currentReservations);
     }
   };
 
