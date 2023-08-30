@@ -1,10 +1,10 @@
 import { Dayjs } from "dayjs";
 
 export interface Reservation {
-  year: string;
-  month: string;
-  date: string;
-  hour: string;
+  year: number;
+  month: number;
+  date: number;
+  hour: number;
 }
 
 export interface TimeSlotListProps {
