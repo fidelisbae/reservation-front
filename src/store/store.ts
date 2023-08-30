@@ -8,6 +8,8 @@ export const store = configureStore({
     reservation: reservationSlice.reducer,
     [reservationApi.reducerPath]: reservationApi.reducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(reservationApi.middleware),
 });
 
 export type RootState = ReturnType<typeof store.getState>;
