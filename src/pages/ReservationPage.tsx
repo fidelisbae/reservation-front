@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Calendar, ConfigProvider } from "antd";
 import styled from "@emotion/styled";
@@ -8,15 +8,37 @@ import "dayjs/locale/ko";
 
 import { TimeSlotListProps, TimeSlotProps } from "src/types/reservation";
 
+import {
+  useGetReservationListQuery,
+  usePostReservationMutation,
+} from "src/store/services/reservation";
+
 dayjs.locale("ko");
 
 const ReservationPage = () => {
+  const {
+    data,
+    isError: getError,
+    isSuccess: getSuccess,
+    isLoading: getLoading,
+  } = useGetReservationListQuery("");
+  const [
+    postReservate,
+    { isLoading: postLoading, isSuccess: postSuccess, isError: postError },
+  ] = usePostReservationMutation();
+
+  useEffect(() => {
+    if (data) {
+      console.log(data);
+    }
+  }, data);
+
   /**
    * 현재 시간
    */
   const now = dayjs();
 
-  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(now);
+  const [selectedDate, setSelectedDate] = useState<Dayjs>(now);
   /**
    * 달력에서 선택할 수 있는 마지막 날짜
    */
@@ -39,7 +61,16 @@ const ReservationPage = () => {
   /**
    * 예약하는 함수
    */
-  const handleReserve = () => {};
+  const handleReserve = (hour: number) => {
+    const data = {
+      year: selectedDate.get("y"),
+      month: selectedDate.get("M") + 1,
+      date: selectedDate.get("D"),
+      hour,
+    };
+    postReservate(data);
+    console.log(data);
+  };
 
   const currentReservations = selectedDate ? [2022] : [];
 
