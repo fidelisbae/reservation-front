@@ -11,9 +11,11 @@ export const reservationApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: "http://localhost:4000/api/",
   }),
+  tagTypes: ["Reservation"],
   endpoints: (builder) => ({
     getReservationList: builder.query<Reservation[], string>({
       query: () => `reservations`,
+      providesTags: ["Reservation"],
     }),
 
     postReservation: builder.mutation<Boolean, Reservation>({
@@ -22,6 +24,7 @@ export const reservationApi = createApi({
         method: "POST",
         body,
       }),
+      invalidatesTags: ["Reservation"],
     }),
   }),
 });
