@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Calendar, ConfigProvider } from "antd";
 import styled from "@emotion/styled";
@@ -6,7 +6,11 @@ import dayjs, { Dayjs } from "dayjs";
 import locale from "antd/locale/ko_KR";
 import "dayjs/locale/ko";
 
-import { TimeSlotListProps, TimeSlotProps } from "src/types/reservation";
+import {
+  CurrentReservationProps,
+  TimeSlotListProps,
+  TimeSlotProps,
+} from "src/types/reservation";
 
 import {
   useGetReservationListQuery,
@@ -31,7 +35,7 @@ const ReservationPage = () => {
     if (data) {
       console.log(data);
     }
-  }, data);
+  }, [data]);
 
   /**
    * 현재 시간
@@ -72,7 +76,22 @@ const ReservationPage = () => {
     console.log(data);
   };
 
-  const currentReservations = selectedDate ? [2022] : [];
+  const getCurrentReservations = ({
+    data,
+    selectedDate,
+  }: CurrentReservationProps) => {
+    const filteredData = data
+      ?.filter((el) => {
+        return (
+          el.year === selectedDate.get("y") &&
+          el.month === selectedDate.get("M") + 1 &&
+          el.date === selectedDate.get("D")
+        );
+      })
+      .map((el) => el.hour);
+
+    return filteredData ? filteredData : [];
+  };
 
   /**
    * Timeslot 컴포넌트
@@ -98,8 +117,13 @@ const ReservationPage = () => {
     date,
     onReserve,
     reservations,
+    data,
   }) => {
     const hours = Array.from({ length: 24 }, (_, i) => i);
+
+    // const selectedDateReservation = data?.filter(el => {
+    //   dayjs(`${el.year}-${el.month}-${el.date}`)
+    // })
 
     return (
       <div className="time-slot-list">
@@ -138,7 +162,8 @@ const ReservationPage = () => {
             <TimeSlotList
               date={selectedDate}
               onReserve={handleReserve}
-              reservations={currentReservations}
+              reservations={getCurrentReservations({ data, selectedDate })}
+              data={data}
             />
           )}
         </TimeslotContainer>
